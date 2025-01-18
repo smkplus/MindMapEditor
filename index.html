@@ -1,0 +1,161 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Mind Map with Markdown</title>
+    <!-- Include Iran Sans font -->
+    <link href="https://cdn.mxit.ir/fonts/iransanse/IRANSansWeb.css" rel="stylesheet">
+    <script src="https://unpkg.com/vis-network/standalone/umd/vis-network.min.js"></script>
+    <style>
+        body {
+            margin: 0;
+            background: #f4f4f4;
+            font-family: 'IRANSansWeb', sans-serif;
+        }
+        #mindmap {
+            width: 100vw;
+            height: 70vh;
+            border: 2px solid #333;
+            font-size: 18px; /* Adjusted font size */
+        }
+        #editor {
+            width: 100%;
+            height: 20vh;
+            padding: 10px;
+            font-family: 'IRANSansWeb', sans-serif;
+            font-size: 16px;
+            border: 2px solid #333;
+            background: #fff;
+            margin-bottom: 10px;
+        }
+        #generate-btn {
+            display: block;
+            width: 100%;
+            padding: 10px;
+            font-family: 'IRANSansWeb', sans-serif;
+            font-size: 18px;
+            background: #66ccff;
+            color: #fff;
+            border: none;
+            cursor: pointer;
+        }
+        #generate-btn:hover {
+            background: #33bbff;
+        }
+    </style>
+</head>
+<body>
+    <textarea id="editor">
+# World of Animals 🐾
+## Mammals 🐘
+### Lion 🦁
+### Elephant 🐘
+### Bear 🐻
+## Birds 🦅
+### Eagle 🦅
+### Parrot 🦜
+### Penguin 🐧
+## Reptiles 🐍
+### Snake 🐍
+### Turtle 🐢
+### Crocodile 🐊
+## Marine Animals 🐠
+### Dolphin 🐬
+### Shark 🦈
+### Goldfish 🐠
+    </textarea>
+    <button id="generate-btn">Generate Mind Map</button>
+    <div id="mindmap"></div>
+
+    <script>
+        function parseMarkdown(markdown) {
+            const lines = markdown.split("\n").map(line => line.trim()).filter(line => line);
+            const nodes = [];
+            const edges = [];
+            let nodeId = 1;
+            const stack = [{ id: nodeId, level: 0, x: 0, y: 0 }];
+            nodes.push({
+                id: nodeId,
+                label: lines[0].replace(/^#+\s*/, ""),
+                color: "#ffcc00",
+                font: { size: 26, bold: "bold" },
+                shape: "box",
+                widthConstraint: { minimum: 200 },
+                heightConstraint: { minimum: 60 },
+                x: 0,
+                y: 0
+            });
+
+            for (let i = 1; i < lines.length; i++) {
+                let line = lines[i];
+                let level = (line.match(/^#+|^- |^\* /) || [""])[0].length;
+                let label = line.replace(/^#+\s*|^- |^\*\s*/, "");
+                let parent = stack.findLast(n => n.level < level) || stack[0];
+
+                nodeId++;
+                let x = parent.x + (level - 1) * 250;
+                let y = parent.y + 200;
+
+                nodes.push({
+                    id: nodeId,
+                    label: label,
+                    shape: "box",
+                    color: level === 2 ? "#66ccff" : "#99cc99",
+                    font: { size: level === 2 ? 22 : 20, bold: "bold" },
+                    widthConstraint: { minimum: 180 },
+                    heightConstraint: { minimum: 50 },
+                    x,
+                    y
+                });
+
+                edges.push({ from: parent.id, to: nodeId });
+                stack.push({ id: nodeId, level, x, y });
+            }
+            return { nodes, edges };
+        }
+
+        function generateMindMap(markdown) {
+            const { nodes, edges } = parseMarkdown(markdown);
+            const container = document.getElementById("mindmap");
+            const data = { nodes: new vis.DataSet(nodes), edges: new vis.DataSet(edges) };
+            const options = {
+                layout: { 
+                    hierarchical: { 
+                        enabled: true, 
+                        direction: "UD", 
+                        nodeSpacing: 300 // Increased node spacing to avoid overlap
+                    } 
+                },
+                nodes: { 
+                    shape: "box",
+                    borderWidth: 2,
+                    shadow: true,
+                    color: { border: "#333", background: "#ffffff" }, 
+                    font: { size: 20, bold: "bold", color: "#333" },
+                    widthConstraint: { minimum: 200 },
+                    heightConstraint: { minimum: 60 },
+                    margin: 20
+                },
+                edges: { arrows: "to", smooth: true, color: "#333" },
+                physics: false, // Keep static
+                interaction: {
+                    dragNodes: true, // Enable node dragging
+                    zoomView: true, 
+                    dragView: true
+                }
+            };
+
+            new vis.Network(container, data, options);
+        }
+
+        document.getElementById("generate-btn").addEventListener("click", () => {
+            const markdown = document.getElementById("editor").value;
+            generateMindMap(markdown);
+        });
+
+        // Initial generation
+        generateMindMap(document.getElementById("editor").value);
+    </script>
+</body>
+</html>
