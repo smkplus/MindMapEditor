@@ -46,8 +46,38 @@
     </style>
 </head>
 <body>
-    <textarea id="editor">
-# World of Animals 🐾
+    <textarea id="editor"></textarea>
+    <button id="generate-btn">Generate Mind Map</button>
+    <div id="mindmap"></div>
+
+    <script>
+        // Function to encode markdown content for URL using base64
+        function encodeMarkdown(markdown) {
+            return btoa(unescape(encodeURIComponent(markdown))); // Convert to base64
+        }
+
+        // Function to decode markdown content from URL using base64
+        function decodeMarkdown(encodedMarkdown) {
+            return decodeURIComponent(escape(atob(encodedMarkdown))); // Convert from base64
+        }
+
+        // Function to update the URL with the current markdown content
+        function updateURL(markdown) {
+            const encodedMarkdown = encodeMarkdown(markdown);
+            window.location.hash = encodedMarkdown;
+        }
+
+        // Function to load markdown content from the URL
+        function loadMarkdownFromURL() {
+            const hash = window.location.hash.substring(1); // Remove the '#' from the hash
+            if (hash) {
+                try {
+                    return decodeMarkdown(hash);
+                } catch (e) {
+                    console.error("Invalid markdown in URL. Using default content.");
+                }
+            }
+            return `# World of Animals 🐾
 ## Mammals 🐘
 ### Lion 🦁
 ### Elephant 🐘
@@ -63,12 +93,9 @@
 ## Marine Animals 🐠
 ### Dolphin 🐬
 ### Shark 🦈
-### Goldfish 🐠
-    </textarea>
-    <button id="generate-btn">Generate Mind Map</button>
-    <div id="mindmap"></div>
+### Goldfish 🐠`;
+        }
 
-    <script>
         function parseMarkdown(markdown) {
             const lines = markdown.split("\n").map(line => line.trim()).filter(line => line);
             const nodes = [];
@@ -149,13 +176,23 @@
             new vis.Network(container, data, options);
         }
 
+        // Load markdown from URL or use default
+        const initialMarkdown = loadMarkdownFromURL();
+        document.getElementById("editor").value = initialMarkdown;
+        generateMindMap(initialMarkdown);
+
+        // Update URL and regenerate mind map when the button is clicked
         document.getElementById("generate-btn").addEventListener("click", () => {
             const markdown = document.getElementById("editor").value;
+            updateURL(markdown);
             generateMindMap(markdown);
         });
 
-        // Initial generation
-        generateMindMap(document.getElementById("editor").value);
+        // Update URL and regenerate mind map when the editor content changes
+        document.getElementById("editor").addEventListener("input", () => {
+            const markdown = document.getElementById("editor").value;
+            updateURL(markdown);
+        });
     </script>
 </body>
 </html>
