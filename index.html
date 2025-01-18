@@ -18,6 +18,7 @@
             height: 70vh;
             border: 2px solid #333;
             font-size: 18px; /* Adjusted font size */
+            background: #ffffff; /* Default white background */
         }
         #editor {
             width: 100%;
@@ -28,10 +29,17 @@
             border: 2px solid #333;
             background: #fff;
             margin-bottom: 10px;
+            display: none; /* Initially hidden */
+            border-radius: 8px; /* Rounded corners */
+            box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1); /* Subtle shadow */
         }
-        #generate-btn {
-            display: block;
-            width: 100%;
+        .button-container {
+            display: flex;
+            gap: 10px; /* Space between buttons */
+            margin-bottom: 10px;
+        }
+        .button-container button {
+            flex: 1; /* Equal width for buttons */
             padding: 10px;
             font-family: 'IRANSansWeb', sans-serif;
             font-size: 18px;
@@ -39,8 +47,11 @@
             color: #fff;
             border: none;
             cursor: pointer;
+            border-radius: 8px; /* Rounded corners */
+            box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1); /* Subtle shadow */
+            transition: background 0.3s ease; /* Smooth hover effect */
         }
-        #generate-btn:hover {
+        .button-container button:hover {
             background: #33bbff;
         }
         #mode-selector {
@@ -53,16 +64,40 @@
             border: 2px solid #333;
             background: #fff;
             cursor: pointer;
+            border-radius: 8px; /* Rounded corners */
+            box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1); /* Subtle shadow */
+        }
+        #toggle-editor-btn {
+            width: 100%;
+            padding: 10px;
+            font-family: 'IRANSansWeb', sans-serif;
+            font-size: 18px;
+            background: #66ccff;
+            color: #fff;
+            border: none;
+            cursor: pointer;
+            margin-bottom: 10px;
+            border-radius: 8px; /* Rounded corners */
+            box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1); /* Subtle shadow */
+            transition: background 0.3s ease; /* Smooth hover effect */
+        }
+        #toggle-editor-btn:hover {
+            background: #33bbff;
         }
     </style>
 </head>
 <body>
+    <button id="toggle-editor-btn">📝 Show Editor</button>
     <textarea id="editor"></textarea>
     <select id="mode-selector">
         <option value="structured">Structured Mode</option>
         <option value="freeform">Freeform Mode</option>
     </select>
-    <button id="generate-btn">Generate Mind Map</button>
+    <div class="button-container">
+        <button id="generate-btn">🌳 Generate Mind Map</button>
+        <button id="share-btn">🔗 Share Link</button>
+        <button id="save-btn">🖼️ Save as Image (PNG)</button>
+    </div>
     <div id="mindmap"></div>
 
     <script>
@@ -153,6 +188,8 @@
             return { nodes, edges };
         }
 
+        let network = null; // Global variable to store the network instance
+
         function generateMindMap(markdown, mode) {
             const { nodes, edges } = parseMarkdown(markdown);
             const container = document.getElementById("mindmap");
@@ -202,7 +239,7 @@
                 options.layout = { hierarchical: false }; // Disable hierarchical layout
             }
 
-            new vis.Network(container, data, options);
+            network = new vis.Network(container, data, options);
         }
 
         // Load markdown from URL or use default
@@ -231,6 +268,54 @@
             const markdown = document.getElementById("editor").value;
             const mode = document.getElementById("mode-selector").value;
             generateMindMap(markdown, mode);
+        });
+
+        // Share Link button functionality
+        document.getElementById("share-btn").addEventListener("click", () => {
+            const url = window.location.href;
+            navigator.clipboard.writeText(url).then(() => {
+                alert("🔗 Link copied to clipboard!");
+            }).catch(() => {
+                alert("❌ Failed to copy link. Please copy it manually.");
+            });
+        });
+
+        // Save as Image button functionality (PNG only)
+        document.getElementById("save-btn").addEventListener("click", () => {
+            if (network) {
+                // Ensure the canvas is fully rendered
+                network.redraw();
+
+                // Access the canvas element
+                const canvas = document.querySelector("#mindmap canvas");
+                if (canvas) {
+                    // Capture the canvas content as PNG
+                    const dataURL = canvas.toDataURL("image/png");
+
+                    // Download the image
+                    const link = document.createElement("a");
+                    link.href = dataURL;
+                    link.download = "mindmap.png";
+                    link.click();
+                } else {
+                    alert("❌ Canvas not found. Please generate the mind map first.");
+                }
+            } else {
+                alert("❌ Mind map not generated yet!");
+            }
+        });
+
+        // Toggle Editor button functionality
+        const editor = document.getElementById("editor");
+        const toggleEditorBtn = document.getElementById("toggle-editor-btn");
+        toggleEditorBtn.addEventListener("click", () => {
+            if (editor.style.display === "none") {
+                editor.style.display = "block";
+                toggleEditorBtn.textContent = "📝 Hide Editor";
+            } else {
+                editor.style.display = "none";
+                toggleEditorBtn.textContent = "📝 Show Editor";
+            }
         });
     </script>
 </body>
