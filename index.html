@@ -43,22 +43,37 @@
         #generate-btn:hover {
             background: #33bbff;
         }
+        #mode-selector {
+            display: block;
+            width: 100%;
+            padding: 10px;
+            font-family: 'IRANSansWeb', sans-serif;
+            font-size: 18px;
+            margin-bottom: 10px;
+            border: 2px solid #333;
+            background: #fff;
+            cursor: pointer;
+        }
     </style>
 </head>
 <body>
     <textarea id="editor"></textarea>
+    <select id="mode-selector">
+        <option value="structured">Structured Mode</option>
+        <option value="freeform">Freeform Mode</option>
+    </select>
     <button id="generate-btn">Generate Mind Map</button>
     <div id="mindmap"></div>
 
     <script>
-        // Function to encode markdown content for URL using base64
+        // Function to encode markdown content for URL
         function encodeMarkdown(markdown) {
-            return btoa(unescape(encodeURIComponent(markdown))); // Convert to base64
+            return encodeURIComponent(markdown);
         }
 
-        // Function to decode markdown content from URL using base64
+        // Function to decode markdown content from URL
         function decodeMarkdown(encodedMarkdown) {
-            return decodeURIComponent(escape(atob(encodedMarkdown))); // Convert from base64
+            return decodeURIComponent(encodedMarkdown);
         }
 
         // Function to update the URL with the current markdown content
@@ -71,11 +86,7 @@
         function loadMarkdownFromURL() {
             const hash = window.location.hash.substring(1); // Remove the '#' from the hash
             if (hash) {
-                try {
-                    return decodeMarkdown(hash);
-                } catch (e) {
-                    console.error("Invalid markdown in URL. Using default content.");
-                }
+                return decodeMarkdown(hash);
             }
             return `# World of Animals 🐾
 ## Mammals 🐘
@@ -142,18 +153,11 @@
             return { nodes, edges };
         }
 
-        function generateMindMap(markdown) {
+        function generateMindMap(markdown, mode) {
             const { nodes, edges } = parseMarkdown(markdown);
             const container = document.getElementById("mindmap");
             const data = { nodes: new vis.DataSet(nodes), edges: new vis.DataSet(edges) };
             const options = {
-                layout: { 
-                    hierarchical: { 
-                        enabled: true, 
-                        direction: "UD", 
-                        nodeSpacing: 300 // Increased node spacing to avoid overlap
-                    } 
-                },
                 nodes: { 
                     shape: "box",
                     borderWidth: 2,
@@ -165,7 +169,6 @@
                     margin: 20
                 },
                 edges: { arrows: "to", smooth: true, color: "#333" },
-                physics: false, // Keep static
                 interaction: {
                     dragNodes: true, // Enable node dragging
                     zoomView: true, 
@@ -173,25 +176,61 @@
                 }
             };
 
+            if (mode === "structured") {
+                // Structured Mode: Hierarchical layout
+                options.layout = {
+                    hierarchical: {
+                        enabled: true,
+                        direction: "UD", // Vertical layout
+                        nodeSpacing: 300 // Increased node spacing
+                    }
+                };
+                options.physics = false; // Disable physics for static layout
+            } else if (mode === "freeform") {
+                // Freeform Mode: Physics-enabled layout
+                options.physics = {
+                    enabled: true,
+                    repulsion: {
+                        nodeDistance: 300, // Increase repulsion to space out nodes
+                        centralGravity: 0.2,
+                        springLength: 200, // Increase spring length for more spacing
+                        springConstant: 0.05,
+                        damping: 0.09
+                    },
+                    solver: "repulsion" // Use repulsion solver for better spacing
+                };
+                options.layout = { hierarchical: false }; // Disable hierarchical layout
+            }
+
             new vis.Network(container, data, options);
         }
 
         // Load markdown from URL or use default
         const initialMarkdown = loadMarkdownFromURL();
         document.getElementById("editor").value = initialMarkdown;
-        generateMindMap(initialMarkdown);
+
+        // Generate initial mind map in Structured Mode
+        generateMindMap(initialMarkdown, "structured");
 
         // Update URL and regenerate mind map when the button is clicked
         document.getElementById("generate-btn").addEventListener("click", () => {
             const markdown = document.getElementById("editor").value;
+            const mode = document.getElementById("mode-selector").value;
             updateURL(markdown);
-            generateMindMap(markdown);
+            generateMindMap(markdown, mode);
         });
 
         // Update URL and regenerate mind map when the editor content changes
         document.getElementById("editor").addEventListener("input", () => {
             const markdown = document.getElementById("editor").value;
             updateURL(markdown);
+        });
+
+        // Regenerate mind map when the mode is changed
+        document.getElementById("mode-selector").addEventListener("change", () => {
+            const markdown = document.getElementById("editor").value;
+            const mode = document.getElementById("mode-selector").value;
+            generateMindMap(markdown, mode);
         });
     </script>
 </body>
